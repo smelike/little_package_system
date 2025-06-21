@@ -1,0 +1,17 @@
+hardware_1_sorting_module:
+  turn_left: "854B0000290F006D"
+  back_to_middle: "854B0000200F0064"
+  turn_right: "854B0000090F004D"
+
+hardware_2_motor_controller:
+  run_forward: "010620000001"
+  run_reverse: "010620000002"
+  stop: "010620000005"
+  free_stop: "010620000006"
+  fault_reset: "010620000007"
+  brake_stop: "010620000009"
+  set_speed_3000rpm: "010620010BB8"
+  set_comm_control_mode: "010620060002"
+  set_speed_source_comm: "010620070003"
+  set_address_1: "010620080001"
+  set_baudrate_19200: "010620090004"

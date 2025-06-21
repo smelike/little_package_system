@@ -1,0 +1,33 @@
+===========================
+Motor Controller Project - Instruction Summary
+===========================
+
+1. Read and complete the task described in the input text file.
+
+2. Extract all MODBUS commands for each hardware component and organize them in a structured `commands.yaml` file.
+
+3. Implement an automatic CRC16 wrapper to apply checksums to all MODBUS commands before transmission.
+
+4. Create a real-time command generator that reads from the `commands.yaml` entries and builds valid MODBUS frames.
+
+5. Package the full project into a clean, ready-to-use ZIP archive with proper folder structure and dependencies.
+
+6. Apply the Singleton pattern in the base serial device class to ensure only one connection exists per (port, baudrate) configuration — useful for shared COM bus scenarios.
+
+7. Include detailed exception handling using structured error codes and messages. Errors should propagate clearly from the hardware layer up to application level.
+
+8. Create an `error_codes.py` file to define all relevant error messages and codes for debugging and fault tracking.
+
+9. Extend the `MotorController` class with a method to initialize control modes (`2006H`) to one of: Modbus-485, IO control, keyboard, or encoder switch.
+
+10. Refactor `MotorController` to use a cache-address-driven architecture with semantic mappings for MODBUS commands.
+
+11. Create a general-purpose function for dynamically generating MODBUS commands, supporting extensibility and reuse.
+
+12. During initialization, `MotorController` should automatically set its control mode to Modbus-485.
+
+13. Before any cache write, `MotorController` must enable writable communication by writing `0001` to cache address `200EH`, and should only do this once per session.
+
+===========================
+End of Summary
+===========================

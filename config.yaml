@@ -1,0 +1,7 @@
+serial:
+  sorter:
+    port: "COM10"
+    baudrate: 9600
+  motor:
+    port: "COM10"
+    baudrate: 19200
