@@ -9,7 +9,8 @@ class MotorController(SerialDevice):
         "control_mode": "2006",
         "speed_source": "2007",
         "address": "2008",
-        "baudrate": "2009"
+        "baudrate": "2009",
+        "comm_writable": "200E"
     }
 
     CONTROL_VALUES = {
@@ -30,9 +31,18 @@ class MotorController(SerialDevice):
 
     def __init__(self, port, baudrate):
         super().__init__(port, baudrate)
+        self._comm_enabled = False
         self.set_control_mode("modbus")
 
     def write_cache(self, address_hex: str, value_hex: str):
+        if not self._comm_enabled:
+            logger.info("Motor: Enabling communication writable mode")
+            self._send_write_command(self.CACHE["comm_writable"], "0001")
+            self._comm_enabled = True
+
+        self._send_write_command(address_hex, value_hex)
+
+    def _send_write_command(self, address_hex: str, value_hex: str):
         logger.info(f"Motor: Writing {value_hex} to {address_hex}")
         cmd = "01" + "06" + address_hex + value_hex
         self.send(build_command(cmd))
@@ -54,5 +64,5 @@ class MotorController(SerialDevice):
 
     def set_control_mode(self, mode: str):
         if mode not in self.CONTROL_MODES:
-            raise ValueError(f"Invalid control mode '{mode}'. Choose from {list(self.CONTROL_MODES.keys())}")
+            raise ValueError(f"Invalid control mode '{mode}'. Choose from: {list(self.CONTROL_MODES.keys())}")
         self.write_cache(self.CACHE["control_mode"], self.CONTROL_MODES[mode])
