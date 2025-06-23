@@ -2,6 +2,7 @@ from hardware.motor_controller import MotorController
 from hardware.sorting_module import SortingModule
 from time import sleep
 
+# Issue: motor_controller 没能把滚筒启动起来，单独使用command从sscom发送命令，可以成功启动滚筒
 def main():
     # Shared COM port with different baudrates
     COM_PORT = "COM3"
