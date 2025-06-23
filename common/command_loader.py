@@ -7,4 +7,18 @@ def load_commands(path='commands.yaml'):
 
 def build_command(command_hex: str, add_crc=True) -> bytes:
     raw = bytes.fromhex(command_hex)
-    return raw + calc_crc16(raw) if add_crc else raw
+    if add_crc:
+        result = raw + calc_crc16(raw)
+    else:
+        result = raw
+
+    # Debug output
+    print("=== build_command DEBUG ===")
+    print(f"Input HEX:        {command_hex}")
+    print(f"Raw Bytes:        {[f'{b:02X}' for b in raw]}")
+    if add_crc:
+        print(f"CRC Added Bytes:  {[f'{b:02X}' for b in result]}")
+    print(f"Final Byte Stream: {result}")
+    print("===========================\n")
+
+    return result

@@ -34,7 +34,20 @@ class MotorController(SerialDevice):
         self._comm_enabled = False
         self.set_control_mode("modbus")
 
+    def _verify_hex_integrity(self, hex_str):
+        try:
+            b = bytes.fromhex(hex_str)
+            return hex_str.upper() == b.hex().upper()
+        except Exception:
+            return False
+
     def write_cache(self, address_hex: str, value_hex: str):
+        if not self._verify_hex_integrity(address_hex):
+            raise ValueError(f"Invalid address_hex format: '{address_hex}'")
+
+        if not self._verify_hex_integrity(value_hex):
+            raise ValueError(f"Invalid value_hex format: '{value_hex}'")
+
         if not self._comm_enabled:
             logger.info("Motor: Enabling communication writable mode")
             self._send_write_command(self.CACHE["comm_writable"], "0001")
@@ -43,7 +56,7 @@ class MotorController(SerialDevice):
         self._send_write_command(address_hex, value_hex)
 
     def _send_write_command(self, address_hex: str, value_hex: str):
-        logger.info(f"Motor: Writing {value_hex} to {address_hex}")
+        logger.info(f"Motor: Writing value {value_hex} to address {address_hex}")
         cmd = "01" + "06" + address_hex + value_hex
         self.send(build_command(cmd))
 
