@@ -1,26 +1,29 @@
-from common.config_loader import load_config
 from hardware.motor_controller import MotorController
 from hardware.sorting_module import SortingModule
+from time import sleep
 
 def main():
-    config = load_config()
+    # Shared COM port with different baudrates
+    COM_PORT = "COM3"
 
-    motor_cfg = config['serial']['motor']
-    sorter_cfg = config['serial']['sorter']
-
-    motor = MotorController(motor_cfg['port'], motor_cfg['baudrate'])
-    motor.connect()
-    motor.set_speed_3000()
+    # Instantiate and test MotorController (19200 baud)
+    motor = MotorController(COM_PORT, 19200)
+    motor.set_speed(1500)
     motor.run_forward()
+    sleep(1)
     motor.stop()
-    motor.close()
+    motor.reset()
 
-    sorter = SortingModule(sorter_cfg['port'], sorter_cfg['baudrate'])
-    sorter.connect()
+    # Instantiate and test SortingModule (38400 baud)
+    sorter = SortingModule(COM_PORT, 38400)
     sorter.turn_left()
+    sleep(0.5)
     sorter.back_to_middle()
+    sleep(0.5)
     sorter.turn_right()
-    sorter.close()
+
+    # Close shared port
+    motor.close()
 
 if __name__ == "__main__":
     main()

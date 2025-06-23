@@ -4,14 +4,13 @@ from common.command_loader import build_command
 
 class SortingModule(SerialDevice):
     CACHE = {
-        "left": "854B0000290F006D",       # Turn left
-        "middle": "854B0000200F0064",     # Back to middle
-        "right": "854B0000090F004D"       # Turn right
+        "left": "854B0000290F006D",
+        "middle": "854B0000200F0064",
+        "right": "854B0000090F004D"
     }
 
     def __init__(self, port, baudrate):
         super().__init__(port, baudrate)
-        self._comm_enabled = False
 
     def send_command(self, key: str):
         if key not in self.CACHE:
