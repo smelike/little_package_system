@@ -1,3 +1,4 @@
+import serial
 from typing import Tuple
 
 class WinRoller:
@@ -5,6 +6,7 @@ class WinRoller:
     STOP_BITS = 1
     VERIFY_BIT = 'None'
     ADDRESS = 0x01
+    PORT = 'COM3'  # /dev/ttyUSB0 change as needed
 
     CMD_WRITE_COIL = 0x05
     CMD_WRITE_REGISTER = 0x06
@@ -27,6 +29,17 @@ class WinRoller:
         'ab_current': 0x04
     }
 
+    def __init__(self, port: str = PORT):
+        self.serial = serial.Serial(
+            port=port,
+            baudrate=self.BAUDRATE,
+            bytesize=serial.EIGHTBITS,
+            parity=serial.PARITY_NONE,
+            stopbits=self.STOP_BITS,
+            timeout=1
+        )
+        self.log_file = open("modbus_log.txt", "w")
+
     def _crc16(self, data: bytes) -> bytes:
         crc = 0xFFFF
         for pos in data:
@@ -47,41 +60,55 @@ class WinRoller:
         data += self._crc16(data)
         return bytes(data)
 
+    def _send_and_log(self, command: bytes, description: str) -> bytes:
+        self.serial.write(command)
+        response = self.serial.read(8)
+        log_entry = f"COMMAND ({description}): {command.hex().upper()}\nRESPONSE: {response.hex().upper()}\n\n"
+        print(log_entry.strip())
+        self.log_file.write(log_entry)
+        self.log_file.flush()
+        return response
+
     # --- Coil setters (bdata) ---
     def set_coil(self, name: str, on: bool) -> bytes:
         addr = self.COIL_MAP[name]
         value = 0xFF00 if on else 0x0000
-        return self._build_command(self.CMD_WRITE_COIL, addr, value)
+        cmd = self._build_command(self.CMD_WRITE_COIL, addr, value)
+        return self._send_and_log(cmd, f"set_coil {name}={'ON' if on else 'OFF'}")
 
     # --- Register setters (wdat) ---
     def set_register(self, name: str, value: int) -> bytes:
         addr = self.REGISTER_MAP[name]
-        return self._build_command(self.CMD_WRITE_REGISTER, addr, value)
+        cmd = self._build_command(self.CMD_WRITE_REGISTER, addr, value)
+        return self._send_and_log(cmd, f"set_register {name}={value}")
 
     # --- Action functions ---
     def start_with_rpm_and_direct(self, rpm: int, reverse: bool) -> Tuple[bytes, bytes, bytes]:
-        cmds = [
-            self.set_register('rpm', rpm),
-            self.set_coil('direction', reverse),
-            self.set_coil('enable_run', True)
-        ]
-        return tuple(cmds)
+        resp1 = self.set_register('rpm', rpm)
+        resp2 = self.set_coil('direction', reverse)
+        resp3 = self.set_coil('enable_run', True)
+        return resp1, resp2, resp3
 
     def reset(self, auto: bool = False) -> bytes:
         return self.set_coil('restart_mode', auto)
 
-    # Extra action templates
     def act_set_mode(self, io_mode: bool) -> bytes:
         return self.set_coil('run_mode', io_mode)
 
     def act_stop(self) -> bytes:
         return self.set_coil('enable_run', False)
 
+    def close(self):
+        self.serial.close()
+        self.log_file.close()
+
 
 if __name__ == '__main__':
     wr = WinRoller()
-    # Example usage
-    print(wr.set_coil('enable_run', True).hex().upper())
-    print(wr.set_register('rpm', 1000).hex().upper())
-    for cmd in wr.start_with_rpm_and_direct(1000, False):
-        print(cmd.hex().upper())
+    try:
+        wr.set_coil('enable_run', True)
+        wr.set_register('rpm', 1000)
+        wr.start_with_rpm_and_direct(1000, False)
+    finally:
+        wr.close()
+#hardware\win_roller.py
