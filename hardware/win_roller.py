@@ -6,18 +6,18 @@ class WinRoller:
     STOP_BITS = 1
     VERIFY_BIT = 'None'
     ADDRESS = 0x01
-    PORT = 'COM3'  # /dev/ttyUSB0 change as needed
+    PORT = '/dev/ttyUSB0'  # change as needed
 
     CMD_WRITE_COIL = 0x05
     CMD_WRITE_REGISTER = 0x06
 
     # Coil (bdata) map
     COIL_MAP = {
-        'enable_run': 0x00,
-        'direction': 0x01,
-        'loop_mode': 0x02,
-        'run_mode': 0x03,
-        'restart_mode': 0x04
+        'enable_run': 0x00,   # bdata0.0
+        'direction': 0x01,    # bdata0.1
+        'loop_mode': 0x02,    # bdata0.2
+        'run_mode': 0x03,     # bdata0.3
+        'restart_mode': 0x04  # bdata0.4
     }
 
     # Register (wdat) map
@@ -70,11 +70,10 @@ class WinRoller:
         return response
 
     # --- Coil setters (bdata) ---
-    def set_coil(self, name: str, on: bool) -> bytes:
+    def set_coil(self, name: str, value: int) -> bytes:
         addr = self.COIL_MAP[name]
-        value = 0xFF00 if on else 0x0000
         cmd = self._build_command(self.CMD_WRITE_COIL, addr, value)
-        return self._send_and_log(cmd, f"set_coil {name}={'ON' if on else 'OFF'}")
+        return self._send_and_log(cmd, f"set_coil {name}={value}")
 
     # --- Register setters (wdat) ---
     def set_register(self, name: str, value: int) -> bytes:
@@ -84,19 +83,24 @@ class WinRoller:
 
     # --- Action functions ---
     def start_with_rpm_and_direct(self, rpm: int, reverse: bool) -> Tuple[bytes, bytes, bytes]:
+        # Step 1: Set 485 mode (bdata0.3 set to 0)
+        self.set_coil('run_mode', 0)
+        # Step 2: Set RPM
         resp1 = self.set_register('rpm', rpm)
-        resp2 = self.set_coil('direction', reverse)
-        resp3 = self.set_coil('enable_run', True)
+        # Step 3: Set direction (bdata0.1)
+        resp2 = self.set_coil('direction', 1 if reverse else 0)
+        # Step 4: Enable run (bdata0.0 set to 1)
+        resp3 = self.set_coil('enable_run', 1)
         return resp1, resp2, resp3
 
     def reset(self, auto: bool = False) -> bytes:
-        return self.set_coil('restart_mode', auto)
+        return self.set_coil('restart_mode', 1 if auto else 0)
 
     def act_set_mode(self, io_mode: bool) -> bytes:
-        return self.set_coil('run_mode', io_mode)
+        return self.set_coil('run_mode', 1 if io_mode else 0)
 
     def act_stop(self) -> bytes:
-        return self.set_coil('enable_run', False)
+        return self.set_coil('enable_run', 0)
 
     def close(self):
         self.serial.close()
@@ -106,9 +110,6 @@ class WinRoller:
 if __name__ == '__main__':
     wr = WinRoller()
     try:
-        wr.set_coil('enable_run', True)
-        wr.set_register('rpm', 1000)
         wr.start_with_rpm_and_direct(1000, False)
     finally:
         wr.close()
-#hardware\win_roller.py
